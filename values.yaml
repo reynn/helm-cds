@@ -1,0 +1,385 @@
+commonConfig:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  maxHeartbeatFailures: 10
+  requestTimeout: 10
+  cache:
+    enabled: true
+    type: redis
+    ttl: 60
+    host: "localhost:6379"
+    password: ""
+#  # sharedInfraToken can be manually set here or a random 64 character code will be generated
+#  sharedInfraToken:
+#  # secretsToken can be manually set here or a random 32 character code will be generated
+#  secretsToken:
+  log:
+    level: info
+    # Max service logs size in bytes (default: 15MB)
+    serviceMaxSize: "15728640"
+    # Max step logs size in bytes (default: 15MB)
+    stepMaxSize: "15728640"
+  graylog:
+    enabled: false
+    accessToken: ""
+    stream: ""
+    url: ""
+    # Example: X-OVH-TOKEN. You can use many keys: aaa,bbb
+    extraKey: ""
+    # value for extraKey field. For many keys: valueaaa,valuebbb
+    extraValue: ""
+    # Example: thot.ovh.com
+    host: ""
+    # Example: 12202
+    port: 0
+    # tcp or udp
+    protocol: ""
+  persistence:
+    enabled: true
+    size: 8Gi
+#    storageClass: ""
+    accessMode: ReadWriteOnce
+  urls:
+    insecure: false
+    api:
+      public:
+      http: "http://localhost:8081"
+      grpc: "http://localhost:8082"
+    ui:
+      internal: "http://localhost:2015"
+      public:
+    hooks:
+      internal: "http://localhost:8083"
+      public:
+    repositories: "http://localhost:8085"
+    hatchery: "http://localhost:8086"
+    vcs: "http://localhost:8084"
+
+api:
+  registry: "docker.io"
+  repository: ovhcom/cds-engine
+  tag: 0.38.1
+  pullPolicy: IfNotPresent
+  replicas: 1
+  ports:
+    grpc: 8082
+    http: 8081
+  service:
+    type: ClusterIP
+    port: 80
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  livenessProbe:
+    httpGet:
+      path: /mon/version
+      port: 8081
+    initialDelaySeconds: 120
+  readinessProbe:
+    httpGet:
+      path: /mon/status
+      port: 8081
+    initialDelaySeconds: 30
+  persistence:
+    enabled: true
+    mountPath: "/app/artifacts"
+    accessMode: "ReadWriteOnce"
+    size: 8Gi
+  config:
+    # if no model and no os/arch is specified in your job's requirements then spawn worker on this architecture (example: amd64, arm, 386)
+    defaultArch: "amd64"
+    # if no model and os/arch is specified in your job's requirements then spawn worker on this operating system (example: freebsd, linux, windows)
+    defaultOS: "linux"
+    # Either filesystem local storage or Openstack Swift Storage are supported
+    smtp:
+      enabled: false
+      from: "no-reply@cds.local"
+      host: ""
+      password: ""
+      port: 25
+      tls: false
+      user: ""
+    artifact:
+      mode: local
+      local:
+        baseDirectory: "/app/artifacts"
+      openstack:
+        # Use if your want to prefix containers for CDS Artifacts
+        containerPrefix: ""
+        # True if you want to disable Temporary URL in file upload
+        disableTempURL: false
+        # Openstack Domain, generally value of $OS_DOMAIN_NAME, v3 auth only
+        domain: ""
+        # Openstack Password, generally value of $OS_PASSWORD
+        password: ""
+        # Region, generally value of $OS_REGION_NAME
+        region: ""
+        # Openstack Tenant, generally value of $OS_TENANT_NAME, v2 auth only
+        tenant: ""
+        # Authentication Endpoint, generally value of $OS_AUTH_URL
+        url: ""
+        # Openstack Username, generally value of $OS_USERNAME
+        username: ""
+    auth:
+      type: local
+      defaultGroup: ""
+      local:
+        signupAllowedDomains: ""
+      ldap:
+        base: "dc=myorganization,dc=com"
+        # Define it if ldapsearch need to be authenticated
+        bindDN: ""
+        # Define it if ldapsearch need to be authenticated
+        bindPwd: ""
+        dn: "uid=%s,ou=people,dc=myorganization,dc=com"
+        enable: false
+        fullname: "{{.givenName}} {{.sn}}"
+        host: ""
+        port: 636
+        ssl: true
+    database:
+      # Maximum wait for connection, in seconds
+      connectTimeout: 10
+      host: "localhost"
+      # DB Max connection
+      maxconn: 20
+      name: "cds"
+      password: "cds"
+      port: 5432
+      # Set a specific role to run SET ROLE for each connection
+      # role = ""
+      # DB SSL Mode: require (default), verify-full, or disable
+      sslmode: "disable"
+      # Statement timeout value in milliseconds
+      timeout: 3000
+      user: "cds"
+    directories:
+      download: "/app/artifacts"
+      keys: "/app/keys"
+    events:
+      kafka:
+        enabled: false
+        broker: ""
+        maxmessagebytes: 10000000
+        password: ""
+        topic: ""
+        user: ""
+    features:
+      izanami:
+        enabled: false
+        apiurl: ""
+        clientid: ""
+        clientsecret: ""
+        # Token shared between Izanami and CDS to be able to send webhooks from izanami
+        token: ""
+    log: {}
+      # Override the commonConfig.log settings here
+      # Max service logs size in bytes (default: 15MB)
+      #serviceMaxSize: 0
+      # Max step logs size in bytes (default: 15MB)
+      #stepMaxSize: 0
+    providers: []
+#      - name: sample-provider
+#        token: whrzzxy2qxe5l3b5qzuuio4m5kyo126z
+    services:
+      - healthPath: "/cds"
+        healthPort: "443"
+        healthUrl: "https://ovh.github.io"
+        name: "sample-service"
+        path: "/cds"
+        port: "443"
+        type: "doc"
+        url: "https://ovh.github.io"
+    counts:
+      api: 1
+      dbmigrate: 1
+      elasticsearch: 1
+      hatchery: 1
+      hooks: 1
+      repositories: 1
+      vcs: 1
+    vault:
+      enable: false
+      key:
+ui:
+  registry: "docker.io"
+  repository: ovhcom/cds-ui
+  tag: 0.38.1
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 2015
+  service:
+    type: ClusterIP
+    port: 80
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 2015
+    initialDelaySeconds: 120
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 2015
+    initialDelaySeconds: 30
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  config: {}
+repositories:
+  registry: "docker.io"
+  repository: ovhcom/cds-engine
+  tag: 0.38.1
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8085
+  service:
+    type: ClusterIP
+    port: 80
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  enabled: true
+  config:
+    retention:
+      operation: 5
+      repositories: 10
+hooks:
+  registry: "docker.io"
+  repository: ovhcom/cds-engine
+  tag: 0.38.1
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8083
+  service:
+    type: ClusterIP
+    port: 80
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  enabled: true
+  config:
+    executionHistory: 10
+    retryDelay: 120
+    retryError: 3
+    urlPublic:
+vcs:
+  registry: "docker.io"
+  repository: ovhcom/cds-engine
+  tag: 0.38.1
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8084
+  service:
+    type: ClusterIP
+    port: 80
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  enabled: true
+  config: {}
+hatchery:
+  registry: "docker.io"
+  repository: ovhcom/cds-engine
+  tag: 0.38.1
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8086
+  service:
+    type: ClusterIP
+    port: 80
+#  Uncomment these to override the commonConfig
+#  nodeSelector: {}
+#  tolerations: []
+#  affinity: {}
+#  resources:
+#    requests:
+#      memory: 512Mi
+#      cpu: 300m
+#    limits:
+#      cpu: 100m
+#      memory: 128Mi
+  enabled: true
+  config: {}
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: cds.local
+      paths: []
+
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+

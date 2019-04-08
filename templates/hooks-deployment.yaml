@@ -1,0 +1,75 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cds.fullname" . }}-hooks
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hooks
+    {{- template "cds.baselabels" . }}
+spec:
+  replicas: {{ .Values.hooks.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.name" . }}-hooks
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.name" . }}-hooks
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: "{{ template "cds.fullname" . }}-hooks"
+          image: "{{ .Values.hooks.registry }}/{{ .Values.hooks.repository }}:{{ .Values.hooks.tag }}"
+          imagePullPolicy: {{ .Values.hooks.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "CDS_HOOKS_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start hooks --config /config/config.toml"
+          env:
+            - name: CDS_HOOKS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+            - name: CDS_HOOKS_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.redis.enabled }}
+                  name: {{ template "cds.redis.fullname" . }}
+                  key: redis-password #reference redis chart secret
+                  {{- else }}
+                  name: {{ template "cds.fullname" }}-secrets
+                  key: redisPassword
+            {{- end }}
+            {{- if .Values.redis.enabled }}
+            - name: CDS_HOOKS_CACHE_REDIS_HOST
+              value: {{ template "cds.redis.fullname" . }}-master:{{ default .Values.commonConfig.cache.port }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.hooks.port }}
+          {{- if or (.Values.hooks.resources) (.Values.commonConfig.resources)}}
+          resources:
+          {{- .Values.hooks.resources | default .Values.commonConfig.resources | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+      volumes:
+        - name: cds-config
+          configMap:
+            name: {{ include "cds.fullname" . }}-configmap
+      {{- if or (.Values.hooks.nodeSelector) (.Values.commonConfig.nodeSelector)}}
+      nodeSelector:
+      {{- .Values.hooks.nodeSelector | default .Values.commonConfig.nodeSelector| toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.hooks.affinity) (.Values.commonConfig.affinity)}}
+      affinity:
+      {{- .Values.hooks.affinity | default .Values.commonConfig.affinity | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.hooks.tolerations) (.Values.commonConfig.tolerations)}}
+      tolerations:
+      {{- .Values.hooks.tolerations | default .Values.commonConfig.tolerations | toYaml | nindent 8 }}
+      {{- end }}
+{{- end }}{{/*disable/enable all*/}}

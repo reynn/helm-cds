@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cds.fullname" . }}-repositories
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+    app.kubernetes.io/role: repositories
+    {{- template "cds.baselabels" . }}
+spec:
+  replicas: {{ .Values.repositories.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+      app.kubernetes.io/role: repositories
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  serviceName: {{ include "cds.fullname" . }}-repositories
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+        helm.sh/chart: {{ include "cds.chart" . }}
+        app.kubernetes.io/role: repositories
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+    spec:
+      containers:
+        - name: "{{ template "cds.fullname" . }}-repositories"
+          image: "{{ .Values.repositories.registry }}/{{ .Values.repositories.repository }}:{{ .Values.repositories.tag }}"
+          imagePullPolicy: {{ .Values.repositories.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "CDS_REPOSITORIES_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start repositories --config /config/config.toml"
+          env:
+            - name: CDS_REPOSITORIES_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+            - name: CDS_REPOSITORIES_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.redis.enabled }}
+                  name: {{ template "cds.redis.fullname" . }}
+                  key: redis-password #reference redis chart secret
+                  {{- else }}
+                  name: {{ template "cds.fullname" }}-secrets
+                  key: redisPassword
+            {{- end }}
+            {{- if .Values.redis.enabled }}
+            - name: CDS_REPOSITORIES_CACHE_REDIS_HOST
+              value: {{ template "cds.redis.fullname" . }}-master:{{ default .Values.commonConfig.cache.port }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.repositories.port }}
+          {{- if or (.Values.repositories.resources) (.Values.commonConfig.resources)}}
+          resources:
+          {{- .Values.repositories.resources | default .Values.commonConfig.resources | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+            - name: {{ include "cds.name" . }}-repositories-data
+              mountPath: {{ .Values.repositories.persistence.mountPath }}
+      volumes:
+        - name: {{ include "cds.name" . }}-config
+          configMap:
+            name: {{ include "cds.name" . }}-configmap
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "cds.name" . }}-repositories-data
+        labels:
+          app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+          app.kubernetes.io/role: repositories
+          app.kubernetes.io/instance: {{ .Release.Name }}
+          app.kubernetes.io/managed-by: {{ .Release.Service }}
+      spec:
+        accessModes:
+{{ .Values.api.persistence.accessModes | toYaml | indent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.repositories.persistence.size | default .Values.commonConfig.persistence.size | quote }}
+        {{- if and (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass) (not .Values.repositories.persistence.hostPath) -}}
+        {{- if (eq "-" (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass)) -}}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: "{{ .Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass }}"
+        {{- end }}
+        {{- end }}
+  updateStrategy:
+{{ .Values.repositories.updateStrategy | toYaml | indent 4 }}

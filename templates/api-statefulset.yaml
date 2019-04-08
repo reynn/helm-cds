@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cds.fullname" . }}-api
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-api
+    {{- template "cds.baselabels" . }}
+spec:
+  serviceName: cds-api
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.name" . }}-api
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.name" . }}-api
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: "{{ include "cds.fullname" . }}-api"
+          image: "{{ .Values.api.registry }}/{{ .Values.api.repository }}:{{ .Values.api.tag }}"
+          imagePullPolicy: {{ .Values.api.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args: ["-c", "/app/cds-engine-linux-amd64 start api --config /config/config.toml"]
+          env:
+            - name: CDS_API_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.postgresql.enabled }}
+                  name: {{ include "cds.postgresql.fullname" . }}
+                  key: postgres-password #reference postgresql chart secret
+                  {{- else }}
+                  name: {{ include "cds.fullname" . }}-secrets
+                  key: postgresPassword
+                  {{- end }}
+            - name: CDS_API_AUTH_SHAREDINFRATOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+            - name: CDS_API_SECRETS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cds.fullname" . }}-secrets
+                  key: secretsToken
+            - name: CDS_API_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.redis.enabled }}
+                  name: {{ template "cds.redis.fullname" . }}
+                  key: redis-password #reference redis chart secret
+                  {{- else }}
+                  name: {{ template "cds.fullname" }}-secrets
+                  key: redisPassword
+                  {{- end }}
+            {{- if .Values.redis.enabled }}
+            - name: CDS_API_CACHE_REDIS_HOST
+              value: {{ template "cds.redis.fullname" . }}-master:{{ default .Values.commonConfig.cache.port }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.ports.http }}
+            - name: grpc
+              containerPort: {{ .Values.api.ports.grpc }}
+          livenessProbe:
+            httpGet:
+              path: /mon/version
+              port: {{ .Values.api.ports.http }}
+            initialDelaySeconds: 120
+          readinessProbe:
+            httpGet:
+              path: /mon/status
+              port: {{ .Values.api.ports.http }}
+            initialDelaySeconds: 30
+          resources:
+            {{- .Values.api.resources | default .Values.commonConfig.resources | toYaml | nindent 12 }}
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+            - name: {{ include "cds.name" . }}-api-data
+              mountPath: {{ .Values.repositories.persistence.mountPath }}
+      volumes:
+        - name: {{ include "cds.name" . }}-config
+          configMap:
+            name: {{ include "cds.name" . }}-configmap
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "cds.name" . }}-api-data
+        labels:
+          app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+          {{- template "cds.baselabels" . }}
+      spec:
+        accessModes:
+{{ .Values.api.persistence.accessModes | toYaml | indent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.repositories.persistence.size | default .Values.commonConfig.persistence.size | quote }}
+        {{- if and (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass) (not .Values.repositories.persistence.hostPath) -}}
+        {{- if (eq "-" (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass)) -}}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: "{{ .Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass }}"
+        {{- end }}
+  {{- end }}
+  updateStrategy:
+  {{ .Values.repositories.updateStrategy | toYaml | indent 4 }}

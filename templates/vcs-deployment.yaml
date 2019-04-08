@@ -1,0 +1,106 @@
+{{- if .Values.vcs.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cds.fullname" . }}-vcs
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-vcs
+    {{- template "cds.baselabels" . }}
+spec:
+  replicas: {{ .Values.vcs.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.name" . }}-vcs
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.name" . }}-vcs
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: "{{ template "cds.fullname" . }}-vcs"
+          image: "{{ .Values.vcs.registry }}/{{ .Values.vcs.repository }}:{{ .Values.vcs.tag }}"
+          imagePullPolicy: {{ .Values.vcs.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "CDS_VCS_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start vcs --config /config/config.toml"
+          env:
+            - name: CDS_VCS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+            - name: CDS_VCS_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.redis.enabled }}
+                  name: {{ template "cds.redis.fullname" . }}
+                  key: redis-password #reference redis chart secret
+                  {{- else }}
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: redisPassword
+            {{- end }}
+            {{- if .Values.vcs.config.gitlab.enabled }}
+            - name: CDS_VCS_SERVERS_GITLAB_GITLAB_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: gitlabSecret
+            {{- end }}
+            {{- if .Values.vcs.config.github.enabled }}
+            - name: CDS_VCS_SERVERS_GITHUB_GITHUB_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: githubClientSecret
+            - name: CDS_VCS_SERVERS_GITHUB_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: githubToken
+            {{- end }}
+            {{- if .Values.vcs.config.bitbucket.enabled }}
+            - name: CDS_VCS_SERVERS_BITBUCKET_BITBUCKET_CONSUMERKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: bitbucketConsumerKey
+            - name: CDS_VCS_SERVERS_BITBUCKET_BITBUCKET_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: bitbucketToken
+            {{- end }}
+            {{- if .Values.redis.enabled }}
+            - name: CDS_VCS_CACHE_REDIS_HOST
+              value: {{ template "cds.redis.fullname" . }}-master:{{ default .Values.commonConfig.cache.port }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.vcs.port }}
+          {{- if or (.Values.vcs.resources) (.Values.commonConfig.resources)}}
+          resources:
+          {{- .Values.vcs.resources | default .Values.commonConfig.resources | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+      volumes:
+        - name: cds-config
+          configMap:
+            name: {{ include "cds.fullname" . }}-configmap
+      {{- if or (.Values.vcs.nodeSelector) (.Values.commonConfig.nodeSelector)}}
+      nodeSelector:
+      {{- .Values.vcs.nodeSelector | default .Values.commonConfig.nodeSelector| toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.vcs.affinity) (.Values.commonConfig.affinity)}}
+      affinity:
+      {{- .Values.vcs.affinity | default .Values.commonConfig.affinity | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.vcs.tolerations) (.Values.commonConfig.tolerations)}}
+      tolerations:
+      {{- .Values.vcs.tolerations | default .Values.commonConfig.tolerations | toYaml | nindent 8 }}
+      {{- end }}
+{{- end }}{{/*disable/enable all*/}}

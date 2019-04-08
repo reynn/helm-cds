@@ -1,0 +1,18 @@
+{{- if .Values.repositories.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cds.fullname" . }}-repositories
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+    {{- template "cds.baselabels" . }}
+spec:
+  type: {{ .Values.repositories.service.type | default .Values.commonConfig.serviceType }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}{{/*disable/enable all*/}}

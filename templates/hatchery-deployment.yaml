@@ -1,0 +1,66 @@
+{{- if .Values.hatchery.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cds.fullname" . }}-hatchery
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hatchery
+    {{- template "cds.baselabels" . }}
+spec:
+  replicas: {{ .Values.hatchery.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.name" . }}-hatchery
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.name" . }}-hatchery
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: "{{ template "cds.fullname" . }}-hatchery-k8s"
+          image: "{{ .Values.hatchery.registry }}/{{ .Values.hatchery.repository }}:{{ .Values.hatchery.tag }}"
+          imagePullPolicy: {{ .Values.hatchery.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "mkdir -p {{ .Values.hatchery.config.kubeconfig.podDir }} && echo $CDS_K8S_FILECONTENT | base64 --decode > {{.Values.hatchery.config.kubeconfig.podDir}}/kubeconfig.yml && CDS_HATCHERY_KUBERNETES_COMMONCONFIGURATION_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start hatchery:kubernetes --config /config/config.toml"
+          env:
+            - name: CDS_K8S_FILECONTENT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: kubeconfig
+            - name: CDS_HATCHERY_KUBERNETES_COMMONCONFIGURATION_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+          ports:
+            - name: http
+              containerPort: {{ .Values.hatchery.port }}
+          {{- if or (.Values.hatchery.resources) (.Values.commonConfig.resources)}}
+          resources:
+          {{- .Values.hatchery.resources | default .Values.commonConfig.resources | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+      volumes:
+        - name: cds-config
+          configMap:
+            name: cds-configmap
+      {{- if or (.Values.hatchery.nodeSelector) (.Values.commonConfig.nodeSelector)}}
+      nodeSelector:
+      {{- .Values.hatchery.nodeSelector | default .Values.commonConfig.nodeSelector| toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.hatchery.affinity) (.Values.commonConfig.affinity)}}
+      affinity:
+      {{- .Values.hatchery.affinity | default .Values.commonConfig.affinity | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if or (.Values.hatchery.tolerations) (.Values.commonConfig.tolerations)}}
+      tolerations:
+      {{- .Values.hatchery.tolerations | default .Values.commonConfig.tolerations | toYaml | nindent 8 }}
+      {{- end }}
+{{- end }}{{/*disable/enable all*/}}

@@ -1,12 +1,10 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ include "cds.fullname" . }}-config
+  name: {{ include "cds.fullname" . }}-configmap
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}
-    helm.sh/chart: {{ include "cds.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- template "cds.baselabels" . }}
 data:
   config.toml: |
     #####################
@@ -76,17 +74,11 @@ data:
         {{- end }}
       {{- if .Values.commonConfig.cache.enabled }}
       ######################
-      # CDS Cache Settings 
+      # CDS Cache Settings
       ######################
       #
       [api.cache]
         ttl = {{ .Values.commonConfig.cache.ttl }}
-
-        # Connect CDS to a redis cache If you more than one CDS instance and to avoid losing data at startup
-        [api.cache.redis]
-          # If your want to use a redis-sentinel based cluster, follow this syntax! <clustername>@sentinel1:26379,sentinel2:26379,sentinel3:26379
-          host = {{ .Values.commonConfig.cache.host | quote }}
-          password = {{ .Values.commonConfig.cache.password | quote }}
       {{- end }}
 
       ################################
@@ -195,11 +187,11 @@ data:
         url = {{ .url | quote }}
       {{- end }}
 
-      {{- if .Values.api.config.smtp.enabled  }}
       #####################
-      ## CDS SMTP Settings 
+      ## CDS SMTP Settings
       #####################
       [api.smtp]
+      {{- if .Values.api.config.smtp.enabled  }}
         disable = false
         from = {{ .Values.api.config.smtp.from | quote }}
         host = {{ .Values.api.config.smtp.host | quote }}
@@ -207,6 +199,8 @@ data:
         port = {{ .Values.api.config.smtp.port }}
         tls = {{ .Values.api.config.smtp.tls }}
         user = {{ .Values.api.config.smtp.user | quote }}
+      {{- else }}
+        disable = true
       {{- end }}
 
       ###########################
@@ -246,8 +240,13 @@ data:
       # CDS URLs Settings 
       #####################
       [api.url]
-        api = {{ .Values.commonConfig.urls.api.public | default .Values.commonConfig.urls.api.http | quote }}
-        ui = {{ .Values.commonConfig.urls.ui.public | default .Values.commonConfig.urls.ui.internal | quote }}
+        {{- if .Values.ingress.enabled }}
+        api = {{ .Values.commonConfig.urls.api.public | quote }}
+        ui = {{ .Values.commonConfig.urls.ui.public | quote }}
+        {{- else }}
+        api = {{ template "cds.api.proxy" . | quote }}
+        ui = {{ template "cds.ui.proxy" . | quote }}
+        {{- end }}
 
       {{- if .Values.api.config.vault.enable }}
       [api.vault]
@@ -258,98 +257,81 @@ data:
     {{- if .Values.hatchery.enabled }}
     [hatchery]
       [hatchery.kubernetes]
-        # Certificate authority data (content, not path and not base64 encoded) for tls kubernetes (optional if no tls needed)
-        # certAuthorityData = ""
-        # Client certificate data (content, not path and not base64 encoded) for tls kubernetes (optional if no tls needed)
-        # clientCertData = ""
-        # Client certificate data (content, not path and not base64 encoded) for tls kubernetes (optional if no tls needed)
-        # clientKeyData = ""
-
         # Worker default memory in Mo
-        defaultMemory = 1024
+        defaultMemory = {{ .Values.hatchery.config.defaultMemory }}
         # Kubernetes config file in yaml
-        kubernetesConfigFile = "kubeconfig.yaml"
-        # Address of kubernetes master
-        kubernetesMasterURL = "https://1.1.1.1:8443"
+        kubernetesConfigFile = "{{ .Values.hatchery.config.kubeconfig.podDir }}/kubeconfig.yaml"
         # Kubernetes namespace in which workers are spawned
-        namespace = "cds"
+        namespace = "{{ .Release.Namespace }}"
         # Nb Workers to provision
-        nbProvision = 1
-        # Password to connect to kubernetes cluster (optional if config file is set)
-        # password = ""
-        # Token to connect to kubernetes cluster (optional if config file is set)
-        # token = ""
-        # Username to connect to kubernetes cluster (optional if config file is set)
-        # username = ""
+        nbProvision = {{ .Values.hatchery.config.nbProvision }}
         # Worker TTL (minutes)
-        workerTTL = 10
+        workerTTL = {{ .Values.hatchery.config.workerTTL }}
 
         [hatchery.kubernetes.commonConfiguration]
-          # Name of Hatchery
-          name = "{{ template "cds.fullname" . }}-hatchery"
           # URL of this Hatchery
           url = {{ .Values.hatchery.port }}
 
           [hatchery.kubernetes.commonConfiguration.api]
             # Maximum allowed consecutives failures on heatbeat routine
-            maxHeartbeatFailures = 10
+            maxHeartbeatFailures = {{ .Values.commonConfig.maxHeartbeatFailures }}
             # Request CDS API: timeout in seconds
-            requestTimeout = 10
+            requestTimeout = {{ .Values.commonConfig.requestTimeout }}
 
             [hatchery.kubernetes.commonConfiguration.api.grpc]
               # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
               insecure = {{ .Values.commonConfig.urls.insecure }}
-              url = {{ .Values.commonConfig.urls.api.grpc | quote }}
+              url = {{ include "cds.api.service.grpc" . | quote }}
 
             [hatchery.kubernetes.commonConfiguration.api.http]
               # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
               insecure = {{ .Values.commonConfig.urls.insecure }}
               # CDS API URL
-              url = {{ .Values.commonConfig.urls.api.http | quote }}
+              url = "http://{{ include "cds.fullname" . }}-api:{{ .Values.api.service.http.port | default .Values.commonConfig.servicePort | default .Values.api.ports.http }}"
 
           ######################
           # CDS Hatchery HTTP Configuration 
           #######################
           [hatchery.kubernetes.commonConfiguration.http]
-            # Listen address without port, example: 127.0.0.1
-            # addr = ""
             port = {{ .Values.hatchery.port }}
 
           # Hatchery Log Configuration
           [hatchery.kubernetes.commonConfiguration.logOptions]
             [hatchery.kubernetes.commonConfiguration.logOptions.spawnOptions]
               # log critical if spawn take more than this value (in seconds)
-              thresholdCritical = 480
+              thresholdCritical = {{ .Values.commonConfig.log.thresholdCritical }}
               # log warning if spawn take more than this value (in seconds)
-              thresholdWarning = 360
+              thresholdWarning = {{ .Values.commonConfig.log.thresholdWarning }}
 
           [hatchery.kubernetes.commonConfiguration.provision]
             # Disabled provisioning. Format:true or false
-            disabled = false
+            disabled = {{ .Values.hatchery.config.provision.disabled }}
             # Check provisioning each n Seconds
-            frequency = 30
+            frequency = {{ .Values.hatchery.config.provision.frequency }}
             # if worker is queued less than this value (seconds), hatchery does not take care of it
-            graceTimeQueued = 4
+            graceTimeQueued = {{ .Values.hatchery.config.provision.graceTimeQueued }}
             # Maximum allowed simultaneous workers provisioning
-            maxConcurrentProvisioning = 10
+            maxConcurrentProvisioning = {{ .Values.hatchery.config.provision.maxConcurrentProvisioning }}
             # Maximum allowed simultaneous workers
-            maxWorker = 10
+            maxWorker = {{ .Values.hatchery.config.provision.maxWorker }}
             # Check if some worker model have to be registered each n Seconds
-            registerFrequency = 60
+            registerFrequency = {{ .Values.hatchery.config.provision.registerFrequency }}
 
+            {{- if .Values.commonConfig.graylog.enabled }}
             # Worker Log Configuration
             [hatchery.kubernetes.commonConfiguration.provision.workerLogsOptions]
               [hatchery.kubernetes.commonConfiguration.provision.workerLogsOptions.graylog]
                 # Example: X-OVH-TOKEN. You can use many keys: aaa,bbb
-                extraKey = ""
+                extraKey = {{ .Values.commonConfig.graylog.extraKey | quote }}
                 # value for extraKey field. For many keys: valueaaa,valuebbb
-                extraValue = ""
+                extraValue = {{ .Values.commonConfig.graylog.extraValue | quote }}
                 # Example: thot.ovh.com
-                host = ""
+                host = {{ .Values.commonConfig.graylog.host | quote }}
                 # Example: 12202
-                port = 0
+                port = {{ .Values.commonConfig.graylog.port }}
                 # tcp or udp
-                protocol = "tcp"
+                protocol = {{ .Values.commonConfig.graylog.protocol | quote }}
+            {{- end }}{{/* --- end of hatchery.log section --- */}}
     {{- end }}{{/* --- end of hatchery section --- */}}
 
     {{- if .Values.hooks.enabled }}
@@ -357,14 +339,11 @@ data:
     # CDS Hooks Settings 
     #######################
     [hooks]
-      URL = {{ .Values.commonConfig.urls.hooks.internal | quote }}
+      URL = "http://{{ include "cds.fullname" . }}-hooks"
       # Disable all hooks executions
       disable = false
       # Number of execution to keep
       executionHistory = {{ .Values.hooks.config.executionHistory }}
-      # Name of this CDS Hooks Service
-      # Enter a name to enable this service
-      name = "{{ template "cds.fullname" . }}-hooks"
       # Execution retry delay in seconds
       retryDelay = {{ .Values.hooks.config.retryDelay }}
       # Retry execution while this number of error is not reached
@@ -384,13 +363,13 @@ data:
         [hooks.api.grpc]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
-          url = {{ .Values.commonConfig.urls.api.grpc | quote }}
+          url = "http://{{ include "cds.fullname" . }}-api:{{ .Values.api.ports.grpc }}"
 
         [hooks.api.http]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
           # CDS API URL
-          url = {{ .Values.commonConfig.urls.api.http | quote }}
+          url = "http://{{ include "cds.fullname" . }}-api"
 
       {{- if .Values.commonConfig.cache.enabled }}
       ######################
@@ -399,12 +378,6 @@ data:
 
       [hooks.cache]
         ttl = {{ .Values.commonConfig.cache.ttl }}
-
-        # Connect CDS to a redis cache If you more than one CDS instance and to avoid losing data at startup
-        [hooks.cache.redis]
-          # If your want to use a redis-sentinel based cluster, follow this syntax! <clustername>@sentinel1:26379,sentinel2:26379,sentinel3:26379
-          host = {{ .Values.commonConfig.cache.host | quote }}
-          password = {{ .Values.commonConfig.cache.password | quote }}
       {{- end }}
 
       ######################
@@ -442,12 +415,9 @@ data:
     # CDS Repositories Settings 
     #######################
     [repositories]
-      URL = {{ .Values.commonConfig.urls.repositories | quote }}
+      URL = "http://{{ include "cds.fullname" . }}-repositories"
       # Root directory where the service will store all checked-out repositories
       basedir = "/app/repositories"
-      # Name of this CDS Repositories Service
-      # Enter a name to enable this service
-      name = "{{ template "cds.fullname" . }}-repositories"
       # Operation retention in redis store (in days)
       operation_retention = {{ .Values.repositories.config.retention.operation }}
       # Re retention on the filesystem (in days)
@@ -463,13 +433,13 @@ data:
         [repositories.api.grpc]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
-          url = {{ .Values.commonConfig.urls.api.grpc | quote }}
+          url = "http://{{ template "cds.fullname" . }}-api:8082"
 
         [repositories.api.http]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
           # CDS API URL
-          url = {{ .Values.commonConfig.urls.api.http | quote }}
+          url = "http://{{ template "cds.fullname" . }}-api"
 
       {{- if .Values.commonConfig.cache.enabled }}
       ######################
@@ -477,12 +447,6 @@ data:
       ######################
       [repositories.cache]
         ttl = {{ .Values.commonConfig.cache.ttl }}
-
-        # Connect CDS to a redis cache If you more than one CDS instance and to avoid losing data at startup
-        [repositories.cache.redis]
-          # If your want to use a redis-sentinel based cluster, follow this syntax! <clustername>@sentinel1:26379,sentinel2:26379,sentinel3:26379
-          host = {{ .Values.commonConfig.cache.host | quote }}
-          password = {{ .Values.commonConfig.cache.password | quote }}
       {{- end }}
 
       ######################
@@ -497,14 +461,15 @@ data:
     # CDS VCS Settings 
     #######################
     [vcs]
-      URL = {{ .Values.commonConfig.urls.vcs | quote }}
-      # Name of this CDS VCS Service
-      # Enter a name to enable this service
-      name = "{{ template "cds.fullname" . }}-vcs"
+      URL = "http://{{ template "cds.fullname" . }}-vcs"
 
       [vcs.UI]
         [vcs.UI.http]
-          url = {{ .Values.commonConfig.urls.ui.public | default .Values.commonConfig.urls.ui.internal | quote }}
+          {{- if .Values.ingress.enabled }}
+          url = {{ .Values.commonConfig.urls.ui.public | quote }}
+          {{- else }}
+          url = {{ template "cds.ui.proxy" . | quote }}
+          {{- end  }}
 
       ######################
       # CDS API Settings 
@@ -516,13 +481,13 @@ data:
         [vcs.api.grpc]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
-          url = {{ .Values.commonConfig.urls.api.grpc | quote }}
+          url = "http://{{ template "cds.fullname" . }}-api:8082"
 
         [vcs.api.http]
           # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
           insecure = {{ .Values.commonConfig.urls.insecure }}
           # CDS API URL
-          url = {{ .Values.commonConfig.urls.api.http | quote }}
+          url = "http://{{ template "cds.fullname" . }}-api"
 
       {{- if .Values.commonConfig.cache.enabled }}
       ######################
@@ -531,12 +496,6 @@ data:
 
       [vcs.cache]
         ttl = {{ .Values.commonConfig.cache.ttl }}
-
-        # Connect CDS to a redis cache If you more than one CDS instance and to avoid losing data at startup
-        [vcs.cache.redis]
-          # If your want to use a redis-sentinel based cluster, follow this syntax! <clustername>@sentinel1:26379,sentinel2:26379,sentinel3:26379
-          host = {{ .Values.commonConfig.cache.host | quote }}
-          password = {{ .Values.commonConfig.cache.password | quote }}
       {{- end }}
 
       ######################
@@ -545,86 +504,83 @@ data:
       [vcs.http]
         port = {{ .Values.vcs.port }}
 
+      {{- if or (.Values.vcs.config.bitbucket.enabled) (.Values.vcs.config.github.enabled) (.Values.vcs.config.gitlab.enabled) }}
       ######################
-      # CDS VCS Server Settings 
+      # CDS VCS Server Settings
       #######################
       [vcs.servers]
+        {{- if .Values.vcs.config.bitbucket.enabled }}
         [vcs.servers.Bitbucket]
           # URL of this VCS Server
-          url = "https://mybitbucket.com"
+          url = {{ .Values.vcs.config.bitbucket.url | quote }}
 
           [vcs.servers.Bitbucket.bitbucket]
             #######
             # CDS <-> Bitbucket. Documentation on https://ovh.github.io/cds/hosting/repositories-manager/bitbucket/ 
             ########
             # You can change the consumeKey if you want
-            consumerKey = "xxx"
+            consumerKey = {{ .Values.vcs.config.bitbucket.consumerKey | quote }}
             # Does polling is supported by VCS Server
-            disablePolling = false
+            disablePolling = {{ .Values.vcs.config.bitbucket.disablePolling }}
             # Does webhooks are supported by VCS Server
-            disableWebHooks = false
-            privateKey = "xxx"
+            disableWebHooks = {{ .Values.vcs.config.bitbucket.disableWebHooks }}
             # If you want to have a reverse proxy url for your repository webhook, for example if you put https://myproxy.com it will generate a webhook URL like this https://myproxy.com/UUID_OF_YOUR_WEBHOOK
-            # proxyWebhook = ""
-            # optional, Bitbucket Token associated to username, used to add comment on Pull Request
-            token = ""
+            proxyWebhook = {{ .Values.vcs.config.bitbucket.proxyWebhook | quote }}
             # optional. Bitbucket username, used to add comment on Pull Request on failed build.
-            username = ""
+            username = {{ .Values.vcs.config.bitbucket.username | quote }}
 
             [vcs.servers.Bitbucket.bitbucket.Status]
               # Set to true if you don't want CDS to push statuses on the VCS server
-              # disable = false
-
+              disable = {{ .Values.vcs.config.bitbucket.status.disable }}
+        {{- end }} {{/* --- end of bitbucket config --- */}}
+        {{- if .Values.vcs.config.github.enabled }}
         [vcs.servers.Github]
           # URL of this VCS Server
-          url = "https://github.com"
+          url = {{ .Values.vcs.config.github.url | quote }}
 
           [vcs.servers.Github.github]
             #######
             # CDS <-> Github. Documentation on https://ovh.github.io/cds/hosting/repositories-manager/github/ 
             ########
             # Github OAuth Application Client ID
-            clientId = "xxxx"
-            # Github OAuth Application Client Secret
-            clientSecret = "xxxx"
+            clientId = {{ .Values.vcs.config.github.clientId | quote }}
             # Does polling is supported by VCS Server
-            disablePolling = false
+            disablePolling = {{ .Values.vcs.config.github.disablePolling }}
             # Does webhooks are supported by VCS Server
-            disableWebHooks = false
+            disableWebHooks = {{ .Values.vcs.config.github.disableWebHooks }}
             # If you want to have a reverse proxy url for your repository webhook, for example if you put https://myproxy.com it will generate a webhook URL like this https://myproxy.com/UUID_OF_YOUR_WEBHOOK
-            # proxyWebhook = ""
-            # optional, Github Token associated to username, used to add comment on Pull Request
-            token = ""
+            proxyWebhook = {{ .Values.vcs.config.github.proxyWebhook | quote }}
             # optional. Github username, used to add comment on Pull Request on failed build.
-            username = ""
+            username = {{ .Values.vcs.config.github.username | quote }}
 
             [vcs.servers.Github.github.Status]
               # Set to true if you don't want CDS to push statuses on the VCS server
-              # disable = false
+              disable = {{ .Values.vcs.config.github.status.disable }}
               # Set to true if you don't want CDS to push CDS URL in statuses on the VCS server
-              # showDetail = false
-
+              showDetail = {{ .Values.vcs.config.github.status.showDetail }}
+        {{- end }} {{/* --- end of github config --- */}}
+        {{- if .Values.vcs.config.gitlab.enabled }}
         [vcs.servers.Gitlab]
           # URL of this VCS Server
-          url = "https://gitlab.com"
+          url = {{ .Values.vcs.config.gitlab.url | quote }}
 
           [vcs.servers.Gitlab.gitlab]
             #######
             # CDS <-> Gitlab. Documentation on https://ovh.github.io/cds/hosting/repositories-manager/gitlab/ 
             ########
-            appId = "xxxx"
+            appId = {{ .Values.vcs.config.gitlab.appId | quote }}
             # Does polling is supported by VCS Server
-            disablePolling = false
+            disablePolling = {{ .Values.vcs.config.gitlab.disablePolling }}
             # Does webhooks are supported by VCS Server
-            disableWebHooks = false
+            disableWebHooks = {{ .Values.vcs.config.gitlab.disableWebHooks }}
             # If you want to have a reverse proxy url for your repository webhook, for example if you put https://myproxy.com it will generate a webhook URL like this https://myproxy.com/UUID_OF_YOUR_WEBHOOK
-            # proxyWebhook = ""
-            secret = "xxxx"
+            proxyWebhook = {{ .Values.vcs.config.gitlab.proxyWebhook }}
 
             [vcs.servers.Gitlab.gitlab.Status]
               # Set to true if you don't want CDS to push statuses on the VCS server
-              # disable = false
+              disable = {{ .Values.vcs.config.gitlab.status.disable }}
               # Set to true if you don't want CDS to push CDS URL in statuses on the VCS server
-              # showDetail = false
-
+              showDetail = {{ .Values.vcs.config.gitlab.status.showDetail }}
+        {{- end }} {{/* --- end of gitlab config --- */}}
+      {{- end }} {{/* --- end of vcs server config --- */}}
     {{- end }} {{/* --- end of repositories section --- */}}

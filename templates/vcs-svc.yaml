@@ -1,0 +1,18 @@
+{{- if .Values.vcs.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cds.fullname" . }}-vcs
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-vcs
+    {{- template "cds.baselabels" . }}
+spec:
+  type: {{ default .Values.commonConfig.serviceType .Values.vcs.service.type }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-vcs
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}{{/*disable/enable all*/}}

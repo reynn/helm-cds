@@ -1,3 +1,10 @@
 
 \.idea/
 export/
+kubeconfig.yaml
+
+charts/
+
+requirements\.lock
+
+test\.yaml

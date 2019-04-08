@@ -1,19 +1,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cds.fullname" . }}
+  name: {{ include "cds.fullname" . }}-api
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-api
     helm.sh/chart: {{ include "cds.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
-  type: {{ .Values.api.service.type }}
+  type: {{ .Values.api.service.type | default .Values.commonConfig.serviceType }}
   ports:
-    - port: {{ .Values.api.service.port }}
+    - port: {{ .Values.api.service.http.port | default .Values.commonConfig.servicePort | default 80 }}
       targetPort: http
       protocol: TCP
       name: http
+    - name: grpc
+      port: {{ .Values.api.service.grpc.port | default 8082 }}
+      targetPort: grpc
   selector:
     app.kubernetes.io/name: {{ include "cds.name" . }}-api
     app.kubernetes.io/instance: {{ .Release.Name }}

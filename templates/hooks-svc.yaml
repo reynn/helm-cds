@@ -1,0 +1,18 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cds.fullname" . }}-hooks
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hooks
+    {{- template "cds.baselabels" . }}
+spec:
+  type: {{ .Values.hooks.service.type | default .Values.commonConfig.serviceType }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hooks
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}{{/*disable/enable all*/}}

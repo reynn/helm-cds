@@ -1,0 +1,18 @@
+{{- if .Values.hatchery.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cds.fullname" . }}-hatchery
+  labels:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hatchery
+    {{- template "cds.baselabels" . }}
+spec:
+  type: {{ .Values.hatchery.service.type | default .Values.commonConfig.serviceType }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: {{ include "cds.name" . }}-hatchery
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}{{/*disable/enable all*/}}

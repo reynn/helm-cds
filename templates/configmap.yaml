@@ -4,7 +4,7 @@ metadata:
   name: {{ include "cds.fullname" . }}-configmap
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}
-    {{- template "cds.baselabels" . }}
+    {{- include "cds.baselabels" . | nindent 4 }}
 data:
   config.toml: |
     #####################
@@ -259,8 +259,6 @@ data:
       [hatchery.kubernetes]
         # Worker default memory in Mo
         defaultMemory = {{ .Values.hatchery.config.defaultMemory }}
-        # Kubernetes config file in yaml
-        kubernetesConfigFile = "{{ .Values.hatchery.config.kubeconfig.podDir }}/kubeconfig.yaml"
         # Kubernetes namespace in which workers are spawned
         namespace = "{{ .Release.Namespace }}"
         # Nb Workers to provision
@@ -287,7 +285,7 @@ data:
               # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
               insecure = {{ .Values.commonConfig.urls.insecure }}
               # CDS API URL
-              url = "http://{{ include "cds.fullname" . }}-api:{{ .Values.api.service.http.port | default .Values.commonConfig.servicePort | default .Values.api.ports.http }}"
+              url = {{ include "cds.api.service.http" . }}
 
           ######################
           # CDS Hatchery HTTP Configuration 

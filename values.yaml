@@ -66,6 +66,7 @@ commonConfig:
       public:
     hooks:
       public:
+
 ingress:
   enabled: true
   annotations: {}
@@ -424,9 +425,7 @@ hatchery:
     defaultMemory: 1024
     nbProvision: 1
     workerTTL: 10
-    kubeconfig:
-      localPath: kubeconfig.yaml
-      podDir: /app/secrets
+    kubeconfig: kubeconfig.yaml
     provision:
       disabled: false
       frequency: 30

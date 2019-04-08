@@ -28,26 +28,26 @@ If release name contains chart name it will be used as a full name.
 {{- printf "http://localhost:8001/api/v1/namespaces/%s/services/https:%s-cds-api:https/proxy/#!/" .Release.Namespace .Release.Name -}}
 {{- end -}}
 
-{{- define "cds.api.service.http" -}}
-{{- if eq (.Values.api.service.http.port | default .Values.commonConfig.servicePort | default 80) 80 }}
-{{ printf "http://%s-api" "cds.fullname" }}
-{{- else -}}
-{{ printf "http://%s-api:%d" "cds.fullname" (.Values.api.service.http.port | default .Values.commonConfig.servicePort) }}
-{{- end -}}
-{{- end -}}
-
 {{/* Generate basic labels */}}
 {{- define "cds.baselabels" }}
-helm.sh/chart: {{ include "cds.chart" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- printf "helm.sh/chart: %s" .Chart.Name }}
+{{ printf "app.kubernetes.io/instance: %s" .Release.Name }}
+{{ printf "app.kubernetes.io/managed-by: %s" .Release.Service }}
 {{- end }}
 
 {{- define "cds.api.service.grpc" -}}
-{{- if eq (.Values.api.service.grpc.port | default 8082) 80 }}
+{{- if eq (.Values.api.service.grpc.port | default 8082 | quote) "80" }}
 {{ printf "http://%s-api" "{{ template \"cds.fullname\" . }}" }}
 {{- else -}}
 {{ printf "http://%s-api:%d" "{{ template \"cds.fullname\" . }}" (.Values.api.service.grpc.port | default 8082) }}
+{{- end -}}
+{{- end -}}
+
+{{- define "cds.api.service.http" -}}
+{{- if eq (.Values.api.service.http.port | default .Values.commonConfig.servicePort | default 80 | quote) "80" }}
+{{ printf "http://%s-api" "cds.fullname" }}
+{{- else -}}
+{{ printf "http://%s-api:%d" "cds.fullname" (.Values.api.service.http.port | default .Values.commonConfig.servicePort) }}
 {{- end -}}
 {{- end -}}
 

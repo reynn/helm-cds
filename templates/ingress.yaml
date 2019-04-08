@@ -1,16 +1,16 @@
-{{- if .Values.ingress.enabled -}}
-{{ $global := . }}
+{{- if .Values.ingress.enabled }}
+{{- $global := . -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: {{ template "cds.fullname" . }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}
-    {{- template "cds.baselabels" . }}
-  {{- if .Values.ingress.annotations }}
+    {{- include "cds.baselabels" . | nindent 4 }}
+  {{ if .Values.ingress.annotations -}}
   annotations:
-    {{- toYaml .Values.ingress.annotations | nindent 4 }}
-  {{- end }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 -}}
+  {{ end }}
 spec:
 {{- if .Values.ingress.tls }}
   tls:

@@ -1,10 +1,11 @@
 apiVersion: v1
+{{- $service := "ui" }}
 kind: Service
 metadata:
-  name: {{ include "cds.fullname" . }}-ui
+  name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-ui
-    {{- template "cds.baselabels" . }}
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.ui.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -15,5 +16,5 @@ spec:
       port: 443
       targetPort: https
   selector:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-ui
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
     app.kubernetes.io/instance: {{ .Release.Name }}

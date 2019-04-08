@@ -1,11 +1,12 @@
 {{- if .Values.repositories.enabled }}
+{{- $service := "repositories" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cds.fullname" . }}-repositories
+  name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
-    {{- template "cds.baselabels" . }}
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.repositories.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -13,6 +14,6 @@ spec:
       port: 80
       targetPort: http
   selector:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}{{/*disable/enable all*/}}

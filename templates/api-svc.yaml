@@ -1,12 +1,11 @@
 apiVersion: v1
+{{- $service := "api" }}
 kind: Service
 metadata:
-  name: {{ include "cds.fullname" . }}-api
+  name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-api
-    helm.sh/chart: {{ include "cds.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.api.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -18,5 +17,5 @@ spec:
       port: {{ .Values.api.service.grpc.port | default 8082 }}
       targetPort: grpc
   selector:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-api
+    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
     app.kubernetes.io/instance: {{ .Release.Name }}

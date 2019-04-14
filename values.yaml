@@ -1,3 +1,10 @@
+commonLabels:
+  helm.sh/chart: "{{.Global.Chart.Name }}"
+  app.kubernetes.io/instance: "{{ .Global.Release.Name }}"
+  app.kubernetes.io/managed-by: "{{ .Global.Release.Service }}"
+  app.kubernetes.io/name: "cds-{{ .Service }}"
+  app.kubernetes.io/role: "{{ .Service }}"
+commonAnnotations: {}
 commonConfig:
   nodeSelector: {}
   tolerations: []
@@ -68,7 +75,7 @@ commonConfig:
       public:
 
 ingress:
-  enabled: true
+  enabled: false
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
@@ -119,6 +126,8 @@ api:
       - "ReadWriteOnce"
 #    hostPath: ""
     size: 8Gi
+  updateStrategy:
+    type: RollingUpdate
   config:
     # if no model and no os/arch is specified in your job's requirements then spawn worker on this architecture (example: amd64, arm, 386)
     defaultArch: "amd64"
@@ -236,6 +245,7 @@ api:
       enable: false
       key:
 ui:
+  enabled: true
   registry: "docker.io"
   repository: ovhcom/cds-ui
   tag: 0.38.1
@@ -263,6 +273,7 @@ ui:
   config:
     baseUrl: /
 repositories:
+  enabled: true
   registry: "docker.io"
   repository: ovhcom/cds-engine
   tag: 0.38.1
@@ -302,6 +313,7 @@ repositories:
       operation: 5
       repositories: 10
 hooks:
+  enabled: true
   registry: "docker.io"
   repository: ovhcom/cds-engine
   tag: 0.38.1
@@ -333,6 +345,7 @@ hooks:
     retryError: 3
     urlPublic:
 vcs:
+  enabled: true
   registry: "docker.io"
   repository: ovhcom/cds-engine
   tag: 0.38.1
@@ -396,6 +409,7 @@ vcs:
         disable: false
         showDetail: false
 hatchery:
+  enabled: true
   registry: "docker.io"
   repository: ovhcom/cds-engine
   tag: 0.38.1

@@ -1,26 +1,25 @@
-apiVersion: apps/v1
+{{- if .Values.repositories.enabled -}}
 {{- $service := "repositories" }}
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    app.kubernetes.io/role: {{ $service }}}
-    {{- include "cds.baselabels" . | nindent 4 }}
+    app.kubernetes.io/role: {{ $service }}
 spec:
   replicas: {{ .Values.repositories.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-      app.kubernetes.io/role: {{ $service }}}
+      app.kubernetes.io/role: {{ $service }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   serviceName: {{ include "cds.fullname" . }}-{{ $service }}
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-        app.kubernetes.io/role: {{ $service }}}
-        {{- include "cds.baselabels" . | nindent 8 }}
+        app.kubernetes.io/role: {{ $service }}
     spec:
       containers:
         - name: "{{ template "cds.fullname" . }}-{{ $service }}"
@@ -71,9 +70,7 @@ spec:
         name: {{ include "cds.name" . }}-{{ $service }}-data
         labels:
           app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-          app.kubernetes.io/role: {{ $service }}}
-          app.kubernetes.io/instance: {{ .Release.Name }}
-          app.kubernetes.io/managed-by: {{ .Release.Service }}
+          app.kubernetes.io/role: {{ $service | quote }}
       spec:
         accessModes:
 {{ .Values.api.persistence.accessModes | toYaml | indent 10 }}
@@ -89,3 +86,4 @@ spec:
         {{- end }}
   updateStrategy:
 {{ .Values.repositories.updateStrategy | toYaml | indent 4 }}
+{{- end -}}{{/*disable/enable all*/}}

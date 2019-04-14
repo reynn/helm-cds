@@ -20,34 +20,49 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
-{{- define "cds.ui.proxy" -}}
-{{- printf "http://localhost:8001/api/v1/namespaces/%s/services/https:%s-cds-ui:https/proxy/#!/" .Release.Namespace .Release.Name -}}
-{{- end -}}
-
-{{- define "cds.api.proxy" -}}
-{{- printf "http://localhost:8001/api/v1/namespaces/%s/services/https:%s-cds-api:https/proxy/#!/" .Release.Namespace .Release.Name -}}
+{{/* Generate basic labels */}}
+{{- define "cds.baselabels.test" }}
+{{- $global := . -}}
+{{- range $key, $val := .Global.Values.commonLabels }}
+{{- $key }}: {{ tpl $val $global }}
+{{ end -}}
 {{- end -}}
 
 {{/* Generate basic labels */}}
 {{- define "cds.baselabels" }}
-{{- printf "helm.sh/chart: %s" .Chart.Name }}
-{{ printf "app.kubernetes.io/instance: %s" .Release.Name }}
-{{ printf "app.kubernetes.io/managed-by: %s" .Release.Service }}
-{{- end }}
+{{- $global := . -}}
+{{- range $key, $val := .Values.commonLabels }}
+{{- $key }}: {{ tpl $val $global }}
+{{ end -}}
+{{- end -}}
 
+{{/* Create the URL for the CDS UI when there is no Ingress */}}
+{{- define "cds.ui.proxy" -}}
+{{- printf "http://localhost:8001/api/v1/namespaces/%s/services/https:%s-cds-ui:https/proxy/#!/" .Release.Namespace .Release.Name -}}
+{{- end -}}
+
+{{/* Create the URL for the CDS API when there is no Ingress */}}
+{{- define "cds.api.proxy" -}}
+{{- printf "http://localhost:8001/api/v1/namespaces/%s/services/https:%s-cds-api:https/proxy/#!/" .Release.Namespace .Release.Name -}}
+{{- end -}}
+
+{{/* Generate the API GRPC service endpoint information */}}
 {{- define "cds.api.service.grpc" -}}
-{{- if eq (.Values.api.service.grpc.port | default 8082 | quote) "80" }}
-{{ printf "http://%s-api" "{{ template \"cds.fullname\" . }}" }}
+{{ $port := .Values.api.service.grpc.port | default 8082 | int }}
+{{- if eq $port 80 -}}
+http://{{ template "cds.fullname" . }}-api
 {{- else -}}
-{{ printf "http://%s-api:%d" "{{ template \"cds.fullname\" . }}" (.Values.api.service.grpc.port | default 8082) }}
+http://{{ template "cds.fullname" . }}-api:{{ $port }}
 {{- end -}}
 {{- end -}}
 
+{{/* Generate the API HTTP service endpoint information */}}
 {{- define "cds.api.service.http" -}}
-{{- if eq (.Values.api.service.http.port | default .Values.commonConfig.servicePort | default 80 | quote) "80" }}
-{{ printf "http://%s-api" "cds.fullname" }}
+{{ $port := .Values.api.service.http.port | default .Values.commonConfig.servicePort | default 80 | int }}
+{{- if eq $port 80 -}}
+http://{{ template "cds.fullname" . }}-api
 {{- else -}}
-{{ printf "http://%s-api:%d" "cds.fullname" (.Values.api.service.http.port | default .Values.commonConfig.servicePort) }}
+http://{{ template "cds.fullname" . }}-api:{{ $port | toString }}
 {{- end -}}
 {{- end -}}
 

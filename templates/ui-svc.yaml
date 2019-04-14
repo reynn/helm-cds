@@ -1,11 +1,11 @@
-apiVersion: v1
+{{- if .Values.ui.enabled -}}
 {{- $service := "ui" }}
+apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.ui.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -18,3 +18,4 @@ spec:
   selector:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}{{/*disable/enable all*/}}

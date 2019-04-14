@@ -6,7 +6,6 @@ metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.hooks.replicas }}
   selector:
@@ -17,7 +16,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-        {{- include "cds.baselabels" . | nindent 8 }}
     spec:
       containers:
         - name: "{{ template "cds.fullname" . }}-{{ $service }}"

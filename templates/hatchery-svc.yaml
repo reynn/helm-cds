@@ -6,7 +6,6 @@ metadata:
   name: {{ include "cds.fullname" . }}-{{ $service | replace ":" "-" }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service | replace ":" "-" }}
-    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.hatchery.service.type | default .Values.commonConfig.serviceType }}
   ports:

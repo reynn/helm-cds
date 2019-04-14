@@ -5,7 +5,6 @@ metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   type: {{ .Values.api.service.type | default .Values.commonConfig.serviceType }}
   ports:

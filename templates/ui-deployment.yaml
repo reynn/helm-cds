@@ -1,11 +1,11 @@
-apiVersion: apps/v1
+{{- if .Values.ui.enabled -}}
 {{- $service := "ui" }}
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    {{- include "cds.baselabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.ui.replicas }}
   selector:
@@ -16,7 +16,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-        {{- include "cds.baselabels" . | nindent 8 }}
     spec:
       containers:
         - name: "{{ template "cds.fullname" . }}-{{ $service }}"
@@ -70,3 +69,4 @@ spec:
       tolerations:
       {{- .Values.ui.tolerations | default .Values.commonConfig.tolerations | toYaml | nindent 8 }}
       {{- end }}
+{{- end }}{{/*disable/enable all*/}}

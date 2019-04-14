@@ -5,19 +5,21 @@ metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
     app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    {{- include "cds.baselabels" . | nindent 4 }}
+    app.kubernetes.io/role: {{ $service | quote }}
+    {{- include "cds.baselabels.test" (dict "Global" . "Service" $service) }}
 spec:
-  serviceName: cds-api
+  serviceName: {{ .Release.Name }}-{{ $service }}
   replicas: {{ .Values.api.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/role: {{ $service | quote }}
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-        {{- include "cds.baselabels" . | nindent 8 }}
+        app.kubernetes.io/role: {{ $service | quote }}
     spec:
       containers:
         - name: "{{ include "cds.fullname" . }}-{{ $service }}"
@@ -81,7 +83,7 @@ spec:
             - name: cds-config
               mountPath: /config
             - name: {{ include "cds.name" . }}-{{ $service }}-data
-              mountPath: {{ .Values.repositories.persistence.mountPath }}
+              mountPath: {{ .Values.api.persistence.mountPath }}
       volumes:
         - name: {{ include "cds.name" . }}-config
           configMap:
@@ -90,20 +92,20 @@ spec:
     - metadata:
         name: {{ include "cds.name" . }}-{{ $service }}-data
         labels:
-          app.kubernetes.io/name: {{ include "cds.name" . }}-repositories
-          {{- template "cds.baselabels" . }}
+          app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+          app.kubernetes.io/role: {{ $service | quote }}
       spec:
         accessModes:
-{{ .Values.api.persistence.accessModes | toYaml | indent 10 }}
+        {{- .Values.api.persistence.accessModes | toYaml | nindent 10 }}
         resources:
           requests:
-            storage: {{ .Values.repositories.persistence.size | default .Values.commonConfig.persistence.size | quote }}
-        {{- if and (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass) (not .Values.repositories.persistence.hostPath) -}}
-        {{- if (eq "-" (.Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass)) -}}
+            storage: {{ .Values.api.persistence.size | default .Values.commonConfig.persistence.size | quote }}
+        {{- if and (.Values.api.persistence.storageClass | default .Values.commonConfig.persistence.storageClass) (not .Values.api.persistence.hostPath) -}}
+        {{- if (eq "-" (.Values.api.persistence.storageClass | default .Values.commonConfig.persistence.storageClass)) -}}
         storageClassName: ""
         {{- else }}
-        storageClassName: "{{ .Values.repositories.persistence.storageClass | default .Values.commonConfig.persistence.storageClass }}"
+        storageClassName: "{{ .Values.api.persistence.storageClass | default .Values.commonConfig.persistence.storageClass }}"
         {{- end }}
   {{- end }}
   updateStrategy:
-  {{ .Values.repositories.updateStrategy | toYaml | indent 4 }}
+  {{- .Values.api.updateStrategy | toYaml | nindent 4 -}}

@@ -1,0 +1,49 @@
+{{- if .Values.elasticsearch.enabled -}}
+{{- $service := "elasticsearch" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cds.fullname" . }}-{{ $service }}
+  labels:
+    helm.sh/chart: "{{ .Chart.Name }}"
+    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+    app.kubernetes.io/role: "{{ $service }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+      app.kubernetes.io/role: "{{ $service }}"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+        app.kubernetes.io/role: "{{ $service }}"
+    spec:
+      containers:
+        - name: "{{ template "cds.fullname" . }}-{{ $service }}-k8s"
+          image: "{{ .Values.image.engine.registry }}/{{ .Values.image.engine.repository }}:{{ .Values.image.engine.tag }}"
+          imagePullPolicy: {{ .Values.image.engine.pullPolicy | quote }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "CDS_ELASTICSEARCH_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start {{ $service }} --config /config/config.toml"
+          env:
+            - name: CDS_ELASTICSEARCH_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cds.fullname" . }}-secrets
+                  key: sharedInfraToken
+          ports:
+            - name: http
+              containerPort: 8084
+          volumeMounts:
+            - name: cds-config
+              mountPath: /config
+      volumes:
+        - name: cds-config
+          configMap:
+            name: cds-configmap
+{{- end }}{{/*disable/enable all*/}}

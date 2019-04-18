@@ -1,9 +1,4 @@
-commonLabels:
-  helm.sh/chart: "{{.Global.Chart.Name }}"
-  app.kubernetes.io/instance: "{{ .Global.Release.Name }}"
-  app.kubernetes.io/managed-by: "{{ .Global.Release.Service }}"
-  app.kubernetes.io/name: "cds-{{ .Service }}"
-  app.kubernetes.io/role: "{{ .Service }}"
+commonLabels: {}
 commonAnnotations: {}
 commonConfig:
   nodeSelector: {}
@@ -13,9 +8,6 @@ commonConfig:
     requests:
       memory: 512Mi
       cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
   maxHeartbeatFailures: 10
   requestTimeout: 10
   cache:
@@ -25,10 +17,10 @@ commonConfig:
     host: "localhost"
     port: 6379
     password: ""
-#  # sharedInfraToken can be manually set here or a random 64 character code will be generated
-#  sharedInfraToken:
-#  # secretsToken can be manually set here or a random 32 character code will be generated
-#  secretsToken:
+    # # sharedInfraToken can be manually set here or a random 64 character code will be generated
+    # sharedInfraToken:
+    # # secretsToken can be manually set here or a random 32 character code will be generated
+    # secretsToken:
   log:
     level: info
     # log critical if spawn take more than this value (in seconds)
@@ -57,7 +49,7 @@ commonConfig:
   persistence:
     enabled: true
     size: 8Gi
-#    storageClass: ""
+    # storageClass: ""
     accessModes:
       - "ReadWriteOnce"
   serviceType: ClusterIP
@@ -73,6 +65,26 @@ commonConfig:
       public:
     hooks:
       public:
+
+image:
+  ui:
+    registry: "docker.io"
+    repository: ovhcom/cds-ui
+    tag: 0.38.1
+    ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+    ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    ##
+    pullPolicy: IfNotPresent
+  engine:
+    registry: "docker.io"
+    repository: ovhcom/cds-engine
+    tag: 0.38.1
+    ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+    ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    ##
+    pullPolicy: IfNotPresent
 
 ingress:
   enabled: false
@@ -93,9 +105,6 @@ ingress:
   #      - cds.local
 
 api:
-  registry: "docker.io"
-  repository: ovhcom/cds-engine
-  tag: 0.38.1
   pullPolicy: IfNotPresent
   replicas: 1
   ports:
@@ -103,28 +112,28 @@ api:
     http: 8081
   service:
     http: {}
-#    type:
-#    port:
+      # type:
+      # port:
     grpc: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+      # type:
+      # port:
+  # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   persistence:
     enabled: true
     mountPath: "/app/artifacts"
     accessModes:
       - "ReadWriteOnce"
-#    hostPath: ""
+    # hostPath: ""
     size: 8Gi
   updateStrategy:
     type: RollingUpdate
@@ -222,17 +231,17 @@ api:
       # Max step logs size in bytes (default: 15MB)
       #stepMaxSize: 0
     providers: []
-#      - name: sample-provider
-#        token: whrzzxy2qxe5l3b5qzuuio4m5kyo126z
+      # - name: sample-provider
+        # token: whrzzxy2qxe5l3b5qzuuio4m5kyo126z
     services: []
-#      - healthPath: "/cds"
-#        healthPort: "443"
-#        healthUrl: "https://ovh.github.io"
-#        name: "sample-service"
-#        path: "/cds"
-#        port: "443"
-#        type: "doc"
-#        url: "https://ovh.github.io"
+      # - healthPath: "/cds"
+        # healthPort: "443"
+        # healthUrl: "https://ovh.github.io"
+        # name: "sample-service"
+        # path: "/cds"
+        # port: "443"
+        # type: "doc"
+        # url: "https://ovh.github.io"
     counts:
       api: 1
       dbmigrate: 1
@@ -246,64 +255,48 @@ api:
       key:
 ui:
   enabled: true
-  registry: "docker.io"
-  repository: ovhcom/cds-ui
-  tag: 0.38.1
-  ## Specify a imagePullPolicy
-  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-  ##
-  pullPolicy: IfNotPresent
   replicas: 1
   port: 2015
   service: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+  #   type:
+  #   port:
+  # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   config:
     baseUrl: /
 repositories:
   enabled: true
-  registry: "docker.io"
-  repository: ovhcom/cds-engine
-  tag: 0.38.1
-  ## Specify a imagePullPolicy
-  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-  ##
-  pullPolicy: IfNotPresent
   replicas: 1
   port: 8085
   service: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+  #   type:
+  #   port:
+  # # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   persistence:
     enabled: true
     mountPath: "/app/repositories"
     accessModes:
       - "ReadWriteOnce"
-    #    hostPath: ""
+    # hostPath: ""
     size: 8Gi
   updateStrategy:
     type: RollingUpdate
@@ -314,62 +307,46 @@ repositories:
       repositories: 10
 hooks:
   enabled: true
-  registry: "docker.io"
-  repository: ovhcom/cds-engine
-  tag: 0.38.1
-  ## Specify a imagePullPolicy
-  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-  ##
-  pullPolicy: IfNotPresent
   replicas: 1
   port: 8083
   service: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+  #   type:
+  #   port:
+  # # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   enabled: true
   config:
     executionHistory: 10
     retryDelay: 120
     retryError: 3
-    urlPublic:
+    urlPublic: ""
 vcs:
   enabled: true
-  registry: "docker.io"
-  repository: ovhcom/cds-engine
-  tag: 0.38.1
-  ## Specify a imagePullPolicy
-  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-  ##
-  pullPolicy: IfNotPresent
   replicas: 1
   port: 8084
   service: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+  #   type:
+  #   port:
+  # # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   enabled: true
   config:
     bitbucket:
@@ -410,36 +387,29 @@ vcs:
         showDetail: false
 hatchery:
   enabled: true
-  registry: "docker.io"
-  repository: ovhcom/cds-engine
-  tag: 0.38.1
-  ## Specify a imagePullPolicy
-  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
-  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
-  ##
-  pullPolicy: IfNotPresent
   replicas: 1
   port: 8086
   service: {}
-#    type:
-#    port:
-#  Uncomment these to override the commonConfig
-#  nodeSelector: {}
-#  tolerations: []
-#  affinity: {}
-#  resources:
-#    requests:
-#      memory: 512Mi
-#      cpu: 300m
-#    limits:
-#      cpu: 100m
-#      memory: 128Mi
+  #   type:
+  #   port:
+  # # Uncomment these to override the commonConfig
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # resources:
+  #   requests:
+  #     memory: 512Mi
+  #     cpu: 300m
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
   enabled: true
   config:
     defaultMemory: 1024
     nbProvision: 1
     workerTTL: 10
     kubeconfig: kubeconfig.yaml
+    masterUrl: ""
     provision:
       disabled: false
       frequency: 30

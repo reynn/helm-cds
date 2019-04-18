@@ -4,7 +4,11 @@ kind: Service
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+    helm.sh/chart: "{{ .Chart.Name }}"
+    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+    app.kubernetes.io/role: "{{ $service }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
 spec:
   type: {{ .Values.api.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -16,5 +20,5 @@ spec:
       port: {{ .Values.api.service.grpc.port | default 8082 }}
       targetPort: grpc
   selector:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+    app.kubernetes.io/role: "{{ $service }}"

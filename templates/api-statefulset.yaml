@@ -4,27 +4,28 @@ kind: StatefulSet
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-    app.kubernetes.io/role: {{ $service | quote }}
-    {{- include "cds.baselabels.test" (dict "Global" . "Service" $service) }}
+    helm.sh/chart: "{{ .Chart.Name }}"
+    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+    app.kubernetes.io/role: "{{ $service }}"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
 spec:
-  serviceName: {{ .Release.Name }}-{{ $service }}
+  serviceName: {{ include "cds.fullname" . }}-{{ $service }}
   replicas: {{ .Values.api.replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-      app.kubernetes.io/role: {{ $service | quote }}
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+      app.kubernetes.io/role: "{{ $service }}"
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
-        app.kubernetes.io/role: {{ $service | quote }}
+        app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
+        app.kubernetes.io/role: "{{ $service }}"
     spec:
       containers:
         - name: "{{ include "cds.fullname" . }}-{{ $service }}"
-          image: "{{ .Values.api.registry }}/{{ .Values.api.repository }}:{{ .Values.api.tag }}"
-          imagePullPolicy: {{ .Values.api.pullPolicy | quote }}
+          image: "{{ .Values.image.engine.registry }}/{{ .Values.image.engine.repository }}:{{ .Values.image.engine.tag }}"
+          imagePullPolicy: {{ .Values.image.engine.pullPolicy | quote }}
           command: ["/bin/sh"]
           args: ["-c", "/app/cds-engine-linux-amd64 start {{ $service }} --config /config/config.toml"]
           env:
@@ -82,7 +83,7 @@ spec:
           volumeMounts:
             - name: cds-config
               mountPath: /config
-            - name: {{ include "cds.name" . }}-{{ $service }}-data
+            - name: {{ include "cds.fullname" . }}-{{ $service }}-data
               mountPath: {{ .Values.api.persistence.mountPath }}
       volumes:
         - name: {{ include "cds.name" . }}-config
@@ -90,9 +91,9 @@ spec:
             name: {{ include "cds.name" . }}-configmap
   volumeClaimTemplates:
     - metadata:
-        name: {{ include "cds.name" . }}-{{ $service }}-data
+        name: {{ include "cds.fullname" . }}-{{ $service }}-data
         labels:
-          app.kubernetes.io/name: {{ include "cds.name" . }}-{{ $service }}
+          app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
           app.kubernetes.io/role: {{ $service | quote }}
       spec:
         accessModes:

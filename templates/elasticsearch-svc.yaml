@@ -1,5 +1,5 @@
-{{- if .Values.repositories.enabled }}
-{{- $service := "repositories" }}
+{{- if .Values.elasticsearch.enabled -}}
+{{- $service := "elasticsearch" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/instance: "{{ .Release.Name }}"
     app.kubernetes.io/managed-by: "{{ .Release.Service }}"
 spec:
-  type: {{ .Values.repositories.service.type | default .Values.commonConfig.serviceType }}
+  type: {{ .Values.commonConfig.serviceType }}
   ports:
     - name: http
       port: 80

@@ -28,6 +28,9 @@ spec:
           image: "{{ .Values.image.engine.registry }}/{{ .Values.image.engine.repository }}:{{ .Values.image.engine.tag }}"
           imagePullPolicy: {{ .Values.image.engine.pullPolicy | quote }}
           command: ["/bin/sh"]
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           args:
             - "-c"
             - "CDS_REPOSITORIES_NAME=\"$(hostname)\" /app/cds-engine-linux-amd64 start repositories --config /config/config.toml"

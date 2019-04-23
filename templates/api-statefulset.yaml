@@ -27,6 +27,9 @@ spec:
           image: "{{ .Values.image.engine.registry }}/{{ .Values.image.engine.repository }}:{{ .Values.image.engine.tag }}"
           imagePullPolicy: {{ .Values.image.engine.pullPolicy | quote }}
           command: ["/bin/sh"]
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           args: ["-c", "/app/cds-engine-linux-amd64 start {{ $service }} --config /config/config.toml"]
           env:
             - name: CDS_API_DATABASE_PASSWORD

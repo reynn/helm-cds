@@ -131,11 +131,11 @@ data:
         {{- if .Values.api.config.features.izanami.enabled }}
         # Feature flipping provider: https://maif.github.io/izanami
         [api.features.izanami]
-          apiurl = {{ .Values.api.config.features.izanami.apiurl }}
-          clientid = {{ .Values.api.config.features.izanami.clientid }}
-          clientsecret = {{ .Values.api.config.features.izanami.clientsecret }}
+          apiurl = {{ .Values.api.config.features.izanami.apiurl | quote }}
+          clientid = {{ .Values.api.config.features.izanami.clientid | quote }}
+          clientsecret = {{ .Values.api.config.features.izanami.clientsecret | quote }}
           # Token shared between Izanami and CDS to be able to send webhooks from izanami
-          token = {{ .Values.api.config.features.izanami.token }}
+          token = {{ .Values.api.config.features.izanami.token | quote }}
         {{- end }}
 
       {{- if .Values.commonConfig.graylog.enabled }}
@@ -279,7 +279,7 @@ data:
             # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
             insecure = {{ .Values.commonConfig.urls.insecure }}
             # CDS API URL
-            url = {{ include "cds.api.service.http" . | quote }}
+            url = {{ include "cds.api.service.grpc" . | quote }}
 
           [elasticsearch.api.http]
             # sslInsecureSkipVerify, set to true if you use a self-signed SSL on CDS API
@@ -604,6 +604,7 @@ data:
             ########
             # Github OAuth Application Client ID
             clientId = {{ .Values.vcs.config.github.clientId | quote }}
+            clientSecret = {{ .Values.vcs.config.github.clientSecret | quote }}
             # Does polling is supported by VCS Server
             disablePolling = {{ .Values.vcs.config.github.disablePolling }}
             # Does webhooks are supported by VCS Server
@@ -612,6 +613,7 @@ data:
             proxyWebhook = {{ .Values.vcs.config.github.proxyWebhook | quote }}
             # optional. Github username, used to add comment on Pull Request on failed build.
             username = {{ .Values.vcs.config.github.username | quote }}
+            token = {{ .Values.vcs.config.github.token | quote }}
 
             [vcs.servers.Github.github.Status]
               # Set to true if you don't want CDS to push statuses on the VCS server

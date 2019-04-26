@@ -5,22 +5,22 @@ kind: Deployment
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    helm.sh/chart: "{{ .Chart.Name }}"
-    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
-    app.kubernetes.io/role: "{{ $service }}"
-    app.kubernetes.io/instance: "{{ .Release.Name }}"
-    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+    chart: "{{ .Chart.Name }}"
+    name: {{ include "cds.fullname" . }}-{{ $service }}
+    role: "{{ $service }}"
+    instance: "{{ .Release.Name }}"
+    managed-by: "{{ .Release.Service }}"
 spec:
   replicas: {{ .Values.ui.replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
-      app.kubernetes.io/role: "{{ $service }}"
+      app: {{ template "cds.name" . }}
+      role: "{{ $service }}"
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
-        app.kubernetes.io/role: "{{ $service }}"
+        app: {{ template "cds.name" . }}
+        role: "{{ $service }}"
     spec:
       containers:
         - name: "{{ template "cds.fullname" . }}-{{ $service }}"

@@ -5,11 +5,11 @@ kind: Service
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service | replace ":" "-" }}
   labels:
-    helm.sh/chart: "{{ .Chart.Name }}"
-    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service | replace ":" "-" }}
-    app.kubernetes.io/role: "{{ $service | replace ":" "-" }}"
-    app.kubernetes.io/instance: "{{ .Release.Name }}"
-    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+    app: {{ template "cds.name" . }}
+    chart: "{{ .Chart.Name }}"
+    role: "{{ $service | replace ":" "-" }}"
+    instance: "{{ .Release.Name }}"
+    managed-by: "{{ .Release.Service }}"
 spec:
   type: {{ .Values.hatchery.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -17,6 +17,6 @@ spec:
       port: 80
       targetPort: http
   selector:
-    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service | replace ":" "-" }}
-    app.kubernetes.io/role: "{{ $service | replace ":" "-" }}"
+    app: {{ template "cds.name" . }}
+    role: "{{ $service | replace ":" "-" }}"
 {{- end }}{{/*disable/enable all*/}}

@@ -67,6 +67,7 @@ commonConfig:
       public:
 
 image:
+  imagePullSecrets: {}
   ui:
     registry: "docker.io"
     repository: ovhcom/cds-ui
@@ -85,6 +86,16 @@ image:
     ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     ##
     pullPolicy: IfNotPresent
+
+rbac:
+  create: true
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
 
 ingress:
   enabled: false
@@ -105,7 +116,6 @@ ingress:
   #      - cds.local
 
 api:
-  pullPolicy: IfNotPresent
   replicas: 1
   ports:
     grpc: 8082
@@ -244,8 +254,8 @@ api:
         # url: "https://ovh.github.io"
     counts:
       api: 1
-      dbmigrate: 1
-      elasticsearch: 1
+      dbmigrate: 0
+      elasticsearch: 0
       hatchery: 1
       hooks: 1
       repositories: 1
@@ -405,17 +415,15 @@ hatchery:
   #     memory: 128Mi
   enabled: true
   config:
-    defaultMemory: 1024
+    defaultMemory: 256
     nbProvision: 1
     workerTTL: 10
-    kubeconfig: kubeconfig.yaml
-    masterUrl: ""
     provision:
       disabled: false
       frequency: 30
       graceTimeQueued: 4
       maxConcurrentProvisioning: 10
-      maxWorker: 10
+      maxWorker: 20
       registerFrequency: 60
 
 redis:

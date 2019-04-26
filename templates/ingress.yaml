@@ -5,10 +5,10 @@ kind: Ingress
 metadata:
   name: {{ template "cds.fullname" . }}
   labels:
-    helm.sh/chart: "{{ .Chart.Name }}"
-    app.kubernetes.io/name: {{ include "cds.name" . }}-ingress
-    app.kubernetes.io/instance: "{{ .Release.Name }}"
-    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+    chart: "{{ .Chart.Name }}"
+    app: {{ template "cds.name" . }}
+    instance: "{{ .Release.Name }}"
+    managed-by: "{{ .Release.Service }}"
   {{ if .Values.ingress.annotations -}}
   annotations:
     {{- toYaml .Values.ingress.annotations | nindent 4 -}}

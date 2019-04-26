@@ -5,11 +5,11 @@ kind: Service
 metadata:
   name: {{ include "cds.fullname" . }}-{{ $service }}
   labels:
-    helm.sh/chart: "{{ .Chart.Name }}"
-    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
-    app.kubernetes.io/role: "{{ $service }}"
-    app.kubernetes.io/instance: "{{ .Release.Name }}"
-    app.kubernetes.io/managed-by: "{{ .Release.Service }}"
+    chart: "{{ .Chart.Name }}"
+    app: {{ template "cds.name" . }}
+    role: "{{ $service }}"
+    instance: "{{ .Release.Name }}"
+    managed-by: "{{ .Release.Service }}"
 spec:
   type: {{ .Values.hooks.service.type | default .Values.commonConfig.serviceType }}
   ports:
@@ -17,6 +17,6 @@ spec:
       port: 80
       targetPort: http
   selector:
-    app.kubernetes.io/name: {{ include "cds.fullname" . }}-{{ $service }}
-    app.kubernetes.io/role: "{{ $service }}"
+    app: {{ template "cds.name" . }}
+    role: "{{ $service }}"
 {{- end }}{{/*disable/enable all*/}}
